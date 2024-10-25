@@ -1,4 +1,4 @@
-from typing import Self
+from __future__ import annotations
 
 
 class NulError(Exception):
@@ -18,7 +18,7 @@ class CString:
         self._inner = inner
 
     @classmethod
-    def new(cls, t: bytearray | bytes | str) -> Self:
+    def new(cls, t: bytearray | bytes | str) -> CString:
         if isinstance(t, bytes):
             t = bytearray(t)
         elif isinstance(t, str):
@@ -29,7 +29,7 @@ class CString:
         return cls.from_vec_unchecked(t)
 
     @classmethod
-    def from_vec_unchecked(cls, v: bytearray) -> Self:
+    def from_vec_unchecked(cls, v: bytearray) -> CString:
         v.append(0)
         return cls(v)
 
@@ -49,11 +49,11 @@ class CString:
         return bytes(self._inner)
 
     @classmethod
-    def from_vec_with_nul_unchecked(cls, v: bytearray) -> Self:
+    def from_vec_with_nul_unchecked(cls, v: bytearray) -> CString:
         return cls(v)
 
     @classmethod
-    def from_vec_with_nul(cls, v: bytearray) -> Self:
+    def from_vec_with_nul(cls, v: bytearray) -> CString:
         if v[-1] != 0:
             raise FromVecWithNulError("the last element must be a nul byte")
 
