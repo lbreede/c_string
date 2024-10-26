@@ -1,6 +1,6 @@
 import pytest
 
-from c_string import CString, FromVecWithNulError, IntoStringError, NulError
+from cstring import CString, FromVecWithNulError, IntoStringError, NulError
 
 
 def test_new():
