@@ -1,6 +1,6 @@
 import pytest
 
-from c_string import CString, FromVecWithNulError, NulError
+from c_string import CString, FromVecWithNulError, IntoStringError, NulError
 
 
 def test_new():
@@ -19,7 +19,17 @@ def test_new():
 
 
 def test_into_string():
-    assert CString.new(bytearray(b"foo")).into_string() == "foo"
+    c_string = CString.new(bytearray(b"foo"))
+    assert c_string.into_string() == "foo"
+
+    # hacking inner bytearray
+    inner = c_string._inner
+    inner.pop()
+    inner.append(128)
+    inner.append(0)
+    c_string._inner = inner
+    with pytest.raises(IntoStringError):
+        c_string.into_string()
 
 
 def test_into_bytes():
@@ -27,7 +37,9 @@ def test_into_bytes():
 
 
 def test_into_bytes_with_nul():
-    assert CString.new("foo").into_bytes_with_nul() == bytearray(b"foo\0")
+    bytearray_with_nul = CString.new("foo").into_bytes_with_nul()
+    assert bytearray_with_nul == bytearray(b"foo\0")
+    assert bytearray_with_nul[-1] == 0
 
 
 def test_as_bytes():
@@ -37,7 +49,9 @@ def test_as_bytes():
 
 
 def test_as_bytes_with_nul():
-    assert CString.new("foo").as_bytes_with_nul() == b"foo\0"
+    bytes_with_nul = CString.new("foo").as_bytes_with_nul()
+    assert bytes_with_nul == b"foo\0"
+    assert bytes_with_nul[-1] == 0
 
 
 def test_from_vec_with_nul_unchecked():

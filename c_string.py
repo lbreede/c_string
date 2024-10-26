@@ -13,6 +13,11 @@ class FromVecWithNulError(Exception):
         super().__init__(message)
 
 
+class IntoStringError(Exception):
+    def __init__(self) -> None:
+        super().__init__("")
+
+
 class CString:
     def __init__(self, inner: bytearray) -> None:
         self._inner = inner
@@ -34,7 +39,10 @@ class CString:
         return cls(v)
 
     def into_string(self) -> str:
-        return self._inner[:-1].decode()
+        try:
+            return self._inner[:-1].decode()
+        except UnicodeDecodeError as e:
+            raise IntoStringError() from e
 
     def into_bytes(self) -> bytearray:
         return self.into_bytes_with_nul()[:-1]
@@ -72,17 +80,11 @@ class CString:
 
 
 def main() -> None:
-    a = CString(bytearray(b"foo\0"))
-    b = CString.new("foo")
-    c = CString.from_vec_unchecked(bytearray(b"foo"))
-    d = CString.from_vec_with_nul_unchecked(bytearray(b"foo\0"))
-    e = CString.from_vec_with_nul(bytearray(b"foo\0"))
+    c_string = CString.from_vec_with_nul(bytearray("foo\0".encode()))
+    print(c_string)
 
-    print(a._inner)
-    print(b._inner)
-    print(c._inner)
-    print(d._inner)
-    print(e._inner)
+    string = c_string.into_string()
+    print(string)
 
 
 if __name__ == "__main__":
