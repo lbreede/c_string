@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from result import Err, Ok, Result
+
 
 class NulError(Exception):
     def __init__(self, nul_position: int, data: bytearray) -> None:
@@ -23,26 +25,26 @@ class CString:
         self._inner = inner
 
     @classmethod
-    def new(cls, t: bytearray | bytes | str) -> CString:
+    def new(cls, t: bytearray | bytes | str) -> Result[CString, NulError]:
         if isinstance(t, bytes):
             t = bytearray(t)
         elif isinstance(t, str):
             t = bytearray(t.encode())
 
         if 0 in t:
-            raise (NulError(t.index(0), t))
-        return cls.from_vec_unchecked(t)
+            return Err(NulError(t.index(0), t))
+        return Ok(cls.from_vec_unchecked(t))
 
     @classmethod
     def from_vec_unchecked(cls, v: bytearray) -> CString:
         v.append(0)
         return cls(v)
 
-    def into_string(self) -> str:
+    def into_string(self) -> Result[str, UnicodeDecodeError]:
         try:
-            return self._inner[:-1].decode()
+            return Ok(self._inner[:-1].decode())
         except UnicodeDecodeError as e:
-            raise IntoStringError() from e
+            return Err(e)
 
     def into_bytes(self) -> bytearray:
         return self.into_bytes_with_nul()[:-1]
@@ -61,14 +63,15 @@ class CString:
         return cls(v)
 
     @classmethod
-    def from_vec_with_nul(cls, v: bytearray) -> CString:
+    def from_vec_with_nul(cls, v: bytearray) -> Result[CString, str]:
+        # TODO: Properly wrap the error in Err
         if v[-1] != 0:
-            raise FromVecWithNulError("the last element must be a nul byte")
+            return Err("FromVecWithNulError")
 
         if v.count(0) > 1:
-            raise FromVecWithNulError("there are more than one nul byte")
+            return Err("FromVecWithNulError")
 
-        return cls(v)
+        return Ok(cls(v))
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, CString):
@@ -76,7 +79,7 @@ class CString:
         return self.as_bytes_with_nul() == other.as_bytes_with_nul()
 
     def __repr__(self) -> str:
-        return repr(self.into_string())
+        return repr(self.into_string().unwrap())
 
 
 def main() -> None:
